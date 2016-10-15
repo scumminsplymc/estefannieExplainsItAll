@@ -1,6 +1,6 @@
 /* PUMPKIN DROID | HALLOWEEN HACK CODE!!
  *
- * This program sets up a servor to move BB-8's head, 
+ * This program sets up a servo to move BB-8's head, 
  * hooks up LEDs and a buzzer to a photoresistor to
  * trigger BB-8 when the lights are off. 
  * 
