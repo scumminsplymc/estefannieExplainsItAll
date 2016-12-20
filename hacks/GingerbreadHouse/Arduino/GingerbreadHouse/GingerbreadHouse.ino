@@ -27,7 +27,7 @@ int incomingByte = 0;   // for incoming serial data
 // create a servo object to control servos
 Servo myservo; 
 Servo gingerbreadMenServos;
-int servoPostiton;
+int servoPosition;
 int pos = 0;    // variable to store the servo position
 
 int musicPlaying = 0;
@@ -60,7 +60,7 @@ void setup() {
         pinMode(11, OUTPUT);
         pinMode(6, OUTPUT);
 
-        servoPostiton = 0;
+        servoPosition = 0;
         myservo.attach(9);
         gingerbreadMenServos.attach(3);
 }
