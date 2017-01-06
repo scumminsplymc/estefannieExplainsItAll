@@ -11,6 +11,10 @@
  */
 #include <Servo.h>
 
+//Wiring
+const int doorServoPin = 9
+const int gingerbreadMenServosPin = 3
+
 int length = 26;
 char notes[] = "eeeeeeegcde fffffeeeeddedg";
 int beats[] = { 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2};
@@ -25,9 +29,9 @@ int spin = 1;
 int incomingByte = 0;   // for incoming serial data
 
 // create a servo object to control servos
-Servo myservo; 
+Servo doorServo; 
 Servo gingerbreadMenServos;
-int servoPostiton;
+int servoPosition;
 int pos = 0;    // variable to store the servo position
 
 int musicPlaying = 0;
@@ -42,6 +46,7 @@ void playTone(int tone, int duration) {
     delayMicroseconds(tone);
   }
 }
+
 void playNote(char note, int duration) {
   char names[] = { 'c', 'd', 'e', 'f', 'g', 'a', 'b', 'C' };
   int tones[] = { 1915, 1700, 1519, 1432, 1275, 1136, 1014, 956 };
@@ -60,9 +65,9 @@ void setup() {
         pinMode(11, OUTPUT);
         pinMode(6, OUTPUT);
 
-        servoPostiton = 0;
-        myservo.attach(9);
-        gingerbreadMenServos.attach(3);
+        servoPosition = 0;
+        doorServo.attach(doorServoPin);
+        gingerbreadMenServos.attach(gingerbreadMenServosPin);
 }
 
 int doorState = 0;
@@ -138,7 +143,7 @@ void loop() {
         if (doorOpen == 1) {
           if (doorState == 0)
           {
-              myservo.write(90);
+              doorServo.write(90);
               if ((dt - door_dt) - prev_door > 8 * 90)
               {
                 prev_door = (dt - door_dt);
@@ -148,7 +153,7 @@ void loop() {
           }
           if (doorState == 1)
           {
-              myservo.write(270);
+              doorServo.write(270);
               if ((dt - door_dt) - prev_door > 8 * 180)
               {
                 prev_door = (dt - door_dt);
@@ -158,7 +163,7 @@ void loop() {
           }
           if (doorState == 2)
           {
-              myservo.write(180);
+              doorServo.write(180);
               doorState = 3;//done
               Serial.print(doorState);
           }
@@ -166,7 +171,7 @@ void loop() {
         else if (doorOpen == 0) {
           if (doorState == 0)
           {
-              myservo.write(180);
+              doorServo.write(180);
               if ((dt - door_dt) - prev_door > 8 * 90)
               {
                 prev_door = (dt - door_dt);
@@ -176,7 +181,7 @@ void loop() {
           }
           if (doorState == 1)
           {
-              myservo.write(270);
+              doorServo.write(270);
               if ((dt - door_dt) - prev_door > 8 * 180)
               {
                 prev_door = (dt - door_dt);
@@ -186,7 +191,7 @@ void loop() {
           }
           if (doorState == 2)
           {
-              myservo.write(90);
+              doorServo.write(90);
               doorState = 3;//done
               Serial.print(doorState);
           }
@@ -253,7 +258,7 @@ void loop() {
                 }
                 else if(incomingByte == 'L')
                 {
-                    digitalWrite(13, LOW);   // turn the LED on (HIGH is the voltage level)
+                    digitalWrite(13, LOW);   // turn the LED off
                 }
                 
                 //Turning the music on
@@ -293,7 +298,7 @@ void loop() {
                 }
                 else if(incomingByte == 'P')
                 {
-                    digitalWrite(11, LOW);   // turn the LED on (HIGH is the voltage level)
+                    digitalWrite(11, LOW);   // turn the LED off
                 }
                 
                 //Christmas Lights
