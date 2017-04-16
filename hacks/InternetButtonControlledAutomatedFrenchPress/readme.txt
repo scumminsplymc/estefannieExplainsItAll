@@ -1,3 +1,10 @@
+automatedFrenchPress.py: Main base control loop for Raspberry Pi
+interetbutton.cpp: Internet Button signal and color control
+clockFont.ttf: cool clock font
+happycat_coffee_64_ppm: cool cat for screen
+OLED.jpg: OLED guide to connect to Raspberry Pi
+StepperDriver.jpg: Driver guide to stepper motors and Raspberry Pi
+
 YOUTUBE VIDEO: https://youtu.be/JgTyHOMsUfc
 
 I decided to make my own automated French Press machine. 
