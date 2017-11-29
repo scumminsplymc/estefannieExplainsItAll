@@ -10,10 +10,12 @@
  * file that was distributed with this source code.
  */
 #include <Servo.h>
+#include "IRremote.h"
 
 //Wiring
-const int doorServoPin = 9
-const int gingerbreadMenServosPin = 3
+const int doorServoPin = 3;
+const int gingerbreadMenServosPin = 9;
+const int receiver = 11;
 
 int length = 26;
 char notes[] = "eeeeeeegcde fffffeeeeddedg";
@@ -24,7 +26,7 @@ int lightsBlink = 0;
 int dance = 0;
 int doorOpen = 0;
 
-int spin = 1;
+int spin = 0;
 
 int incomingByte = 0;   // for incoming serial data
 
@@ -33,18 +35,82 @@ Servo doorServo;
 Servo gingerbreadMenServos;
 int servoPosition;
 int pos = 0;    // variable to store the servo position
+IRrecv irrecv(receiver);     // create instance of 'irrecv'
+decode_results results;      // create instance of 'decode_results'
 
 int musicPlaying = 0;
 
+void(* resetFunc) (void) = 0;
+
+void translateIR() // takes action based on IR code received
+
+// describing Remote IR codes 
+
+{
+
+  switch(results.value)
+
+  {
+  case 0xFFA25D: Serial.println("POWER"); resetFunc(); break;
+  case 0xFFE21D: Serial.println("FUNC/STOP"); break;
+  case 0xFF629D: Serial.println("VOL+"); break;
+  case 0xFF22DD: Serial.println("FAST BACK");    break;
+  case 0xFF02FD: Serial.println("PAUSE");    break;
+  case 0xFFC23D: Serial.println("FAST FORWARD");   break;
+  case 0xFFE01F: Serial.println("DOWN");    break;
+  case 0xFFA857: Serial.println("VOL-");    break;
+  case 0xFF906F: Serial.println("UP");    break;
+  case 0xFF9867: Serial.println("EQ");    break;
+  case 0xFFB04F: Serial.println("ST/REPT");    break;
+  case 0xFF6897: Serial.println("0");    break;
+  case 0xFF30CF: { //TURN MUSIC ON AND OFF
+    Serial.println("1"); 
+    if (musicPlaying == 0){
+      musicPlaying = 1;}
+    else { musicPlaying = 0;}}
+    break;
+  
+  case 0xFF18E7: {//TURN LIGHTS ON AND OFF
+    Serial.println("2");
+    if (lightsBlink == 0){
+      lightsBlink = 1;}
+    else { lightsBlink = 0;}}   
+   break;
+  case 0xFF7A85:{ //TURN DANCE ON AND OFF
+    Serial.println("3");
+    if (dance == 0){
+      dance = 1;}
+    else { dance = 0;}}   break;  
+  case 0xFF10EF: Serial.println("4");    break;
+  case 0xFF38C7: Serial.println("5");    break;
+  case 0xFF5AA5: Serial.println("6");    break;
+  case 0xFF42BD: Serial.println("7");    break;
+  case 0xFF4AB5: Serial.println("8");    break;
+  case 0xFF52AD: Serial.println("9");    break;
+  case 0xFFFFFFFF: Serial.println(" REPEAT");break;  
+
+  default: 
+    Serial.println(" other button   ");
+
+  }// End Case
+
+  delay(500); // Do not get immediate repeat
+}
 void playTone(int tone, int duration) {
+
+  if (!gingerbreadMenServos.attached()){gingerbreadMenServos.attach(gingerbreadMenServosPin);}
   for (long i = 0; i < duration * 1000L; i += tone * 2) {
     digitalWrite(13, HIGH);
     digitalWrite(6, HIGH);
     delayMicroseconds(tone);
     digitalWrite(13, LOW);
     digitalWrite(6, LOW);
+    pos + 15;
+    gingerbreadMenServos.write(pos);
     delayMicroseconds(tone);
-  }
+    if (pos > 360){pos = 0;}
+    }
+  
 }
 
 void playNote(char note, int duration) {
@@ -61,8 +127,10 @@ void playNote(char note, int duration) {
 
 void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-        pinMode(13, OUTPUT);
-        pinMode(11, OUTPUT);
+        Serial.println("IR Receiver Button Decode"); 
+    irrecv.enableIRIn(); // Start the receiver
+    pinMode(13, OUTPUT);
+       
         pinMode(6, OUTPUT);
 
         servoPosition = 0;
@@ -83,6 +151,12 @@ long dance_dt = 0;
 long light_dt = 0;
 
 void loop() {
+  if (irrecv.decode(&results)) // have we received an IR signal?
+
+  {
+    translateIR(); 
+    irrecv.resume(); // receive the next value
+  }  
   
   unsigned long dt = millis();
   
@@ -122,24 +196,31 @@ void loop() {
             lightState = 0;
            }
           }
+          
         }
+        else if (lightsBlink == 0) {digitalWrite(6,LOW);}
+        
+        if (dance == 1 && musicPlaying == 0) {
 
-        if (dance == 1) {
-          //Serial.print("Dance!");
+          if (gingerbreadMenServos.attached()){
+            for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+         // in steps of 1 degree
+       gingerbreadMenServos.write(pos);              // tell servo to go to position in variable 'pos'
+         delay(15);                      // waits 15ms for the servo to reach the position
+         }
+         for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
           gingerbreadMenServos.write(pos);              // tell servo to go to position in variable 'pos'
-          if ((dt - dance_dt) - prev_dance > 1) {
-            pos++;
-            prev_dance = (dt - dance_dt);
+        delay(15);                     // waits 15ms for the servo to reach the position
+            }
+          
           }
-          //delay(3);                       // waits 15ms for the servo to reach the position
-          pos++;
-          if (pos >= 360)
-            pos = 0;
+          else {gingerbreadMenServos.attach(gingerbreadMenServosPin);}
         }
         else if (dance == 0) {
-          gingerbreadMenServos.write(pos);
+          gingerbreadMenServos.detach();
         }
-
+        
+      
         if (doorOpen == 1) {
           if (doorState == 0)
           {
@@ -197,142 +278,5 @@ void loop() {
           }
         }
 
-        // send data only when you receive data:
-        if (Serial.available() > 0) {
-                // read the incoming byte:
-                incomingByte = Serial.read();
-
-                // say what you got:
-                Serial.print("I received: ");
-                Serial.println(incomingByte, DEC);
-
-                if (incomingByte == 'E')
-                {
-                  // everything on
-                  digitalWrite(13, HIGH);
-                  
-                  musicPlaying = 1;
-                  
-                  digitalWrite(11, HIGH);
-                  
-                  lightsBlink = 1;
-                  light_dt = dt;
-                  prev_light = 0;
-                  
-                  dance = 1;
-                  dance_dt = dt;
-                  prev_dance = 0;
-                  
-                  doorOpen = 1;
-                  door_dt = dt;
-                  prev_door = 0;
-                  doorState = 0;
-                }
-                else if (incomingByte == 'N')
-                {
-                  // everything off
-                  digitalWrite(13, LOW);
-                  
-                  musicPlaying = 0;
-                  
-                  digitalWrite(11, LOW);
-                  
-                  lightsBlink = 0;
-                  light_dt = dt;
-                  prev_light = 0;
-                  
-                  dance = 0;
-                  dance_dt = dt;
-                  prev_dance = 0;
-                  
-                  doorOpen = 0;
-                  door_dt = dt;
-                  prev_door = 0;
-                  doorState = 0;
-                }
-
-                //lights that turn on with the music's beats!
-                if(incomingByte == 'H')
-                {
-                    digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
-                }
-                else if(incomingByte == 'L')
-                {
-                    digitalWrite(13, LOW);   // turn the LED off
-                }
-                
-                //Turning the music on
-                else if(incomingByte == 'J')
-                {
-                    musicPlaying = 1;
-                }
-                
-                else if(incomingByte == 'B')
-                {
-                    musicPlaying = 0; 
-                }
-                
-                //Opening the front door
-                else if(incomingByte == 'D')
-                {
-                  doorOpen = 1;
-                  door_dt = dt;
-                  prev_door = 0;
-                  doorState = 0;
-                }
-                //Closing the front door
-                else if(incomingByte == 'F')
-                {
-            
-                  Serial.println("Close Door");
-                  doorOpen = 0;
-                  door_dt = dt;
-                  prev_door = 0;
-                  doorState = 0;
-                }
-                
-                //Lights inside the gingerbread house
-                if(incomingByte == 'I')
-                {
-                    digitalWrite(11, HIGH);   // turn the LED on (HIGH is the voltage level)
-                }
-                else if(incomingByte == 'P')
-                {
-                    digitalWrite(11, LOW);   // turn the LED off
-                }
-                
-                //Christmas Lights
-                if(incomingByte == 'C')
-                {
-                  lightsBlink = 1;
-                  light_dt = dt;
-                  prev_light = 0;
-                }
-                else if(incomingByte == 'O')
-                {
-                  lightsBlink = 0;
-                  light_dt = dt;
-                  prev_light = 0;
-                  if (musicPlaying == 0) {
-                    digitalWrite(6, LOW);
-                  }
-                }
-                
-                //moving Trees and Gingerbread Men
-                if(incomingByte == 'M')
-                {
-                  dance = 1;
-                  dance_dt = dt;
-                  prev_dance = 0;
-                }
-                
-                //stop moving
-                else if(incomingByte == 'G')
-                {
-                  dance = 0;
-                  dance_dt = dt;
-                  prev_dance = 0;
-                }
-        }
 }
  
